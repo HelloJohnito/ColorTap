@@ -10,26 +10,35 @@
 
 typedef enum{
     RED,
-    BLUE,
+    ORANGE,
+    YELLOW,
     GREEN,
-    YELLOW
+    BLUE,
+    VIOLET,
 } Colors;
+
 
 @interface ViewController () {
     NSArray *colors;
     NSMutableArray *buttons;
-    int squareNumber;
+    NSMutableArray *gamePattern;
+    int level;
 }
-- (void) setBackgroundColorForButton: (UIButton*) button withColor: (int)colorValue;
+- (void)setBackgroundColorForButton: (UIButton*)button withColor: (int)colorValue;
+- (void)startGame;
+- (void)createPattern;
+- (void)showPatternToUser: (NSTimer *)timer;
+- (void)playGame: (NSTimer *)timer;
 @end
+
+
 
 @implementation ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    colors = @[@(RED), @(BLUE), @(GREEN), @(YELLOW)];
-    [self setBackgroundColorForButton:_button1 withColor:[colors[0] intValue]];
+    colors = @[@(RED), @(ORANGE), @(YELLOW), @(GREEN), @(BLUE), @(VIOLET)];
     
     buttons = [[NSMutableArray alloc] init];
     [buttons addObject: _button1];
@@ -40,7 +49,8 @@ typedef enum{
     [buttons addObject: _button6];
     
     for(int i = 0; i < [buttons count]; i++){
-        [self setBackgroundColorForButton:[buttons objectAtIndex:i] withColor:[colors[0] intValue]];
+        ((UIButton *)[buttons objectAtIndex:i]).showsTouchWhenHighlighted = YES;
+        [self setBackgroundColorForButton:[buttons objectAtIndex:i] withColor: [colors[i] intValue]];
     }
 }
 
@@ -51,20 +61,74 @@ typedef enum{
 }
 
 
+- (void)startGame{
+    level = 1;
+    [self createPattern];
+    NSMutableDictionary *patternParameter = [[NSMutableDictionary alloc] init];
+    patternParameter[@"position"] = @0;
+    [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(showPatternToUser:) userInfo: patternParameter repeats:YES];
+}
 
-- (void) setBackgroundColorForButton: (UIButton*) button withColor: (int)colorValue{
+
+- (void)createPattern{
+    int currentNumberOfPattern = level + 4;
+    gamePattern = [[NSMutableArray alloc] init];
+    
+    for(int i = 0; i < currentNumberOfPattern; i++){
+        NSNumber *randomNumber = [NSNumber numberWithInt: arc4random_uniform(6)];
+        [gamePattern addObject: randomNumber];
+    }
+}
+
+
+-(void)showPatternToUser: (NSTimer *)timer{
+    if([[timer userInfo][@"position"] intValue] == [gamePattern count]){
+        [timer invalidate];
+        timer = nil;
+        [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(playGame:) userInfo:nil repeats:YES];
+        return;
+    }
+    int i = [([timer userInfo][@"position"]) intValue];
+    UIButton* choosenButton = [buttons objectAtIndex: [[gamePattern objectAtIndex:i] intValue]];
+    [timer userInfo][@"position"] = @([[timer userInfo][@"position"] intValue] + 1);
+    NSLog(@"%li", (long)choosenButton.tag);
+}
+
+
+-(void)playGame: (NSTimer *)timer{
+    int currentSecond = [self.gameTimer.text intValue];
+    if(currentSecond == 0){
+        [timer invalidate];
+        timer = nil;
+        //game over
+        return;
+    }
+    currentSecond -= 1;
+    self.gameTimer.text = [NSString stringWithFormat:@"%d", currentSecond];
+    
+    
+}
+
+
+-(void)setBackgroundColorForButton: (UIButton*)button withColor: (int)colorValue{
     switch(colorValue){
         case RED:
             [button setBackgroundColor:[UIColor redColor]];
             break;
-        case BLUE:
-            [button setBackgroundColor: [UIColor blueColor]];
+        case ORANGE:
+            [button setBackgroundColor:[UIColor orangeColor]];
+            break;
+        case YELLOW:
+            [button setBackgroundColor:[UIColor yellowColor]];
             break;
         case GREEN:
             [button setBackgroundColor: [UIColor greenColor]];
             break;
-        case YELLOW:
-            [button setBackgroundColor:[UIColor yellowColor]];
+        case BLUE:
+            [button setBackgroundColor: [UIColor blueColor]];
+            break;
+        case VIOLET:
+            [button setBackgroundColor: [UIColor purpleColor]];
             break;
     }
 }
@@ -73,7 +137,10 @@ typedef enum{
 
 - (IBAction)buttonPressed:(id)sender {
     UIButton *currentButton=(UIButton*)sender;
-    
     NSLog(@"%li", (long)currentButton.tag);
+}
+
+- (IBAction)startGamePressed:(id)sender {
+    [self startGame];
 }
 @end

@@ -10,9 +10,8 @@
 
 @interface ViewController : UIViewController
 
-@property (weak, nonatomic) IBOutlet UILabel *timer;
+@property (weak, nonatomic) IBOutlet UILabel *gameTimer;
 @property (weak, nonatomic) IBOutlet UILabel *score;
-
 
 @property (weak, nonatomic) IBOutlet UIButton *button1;
 @property (weak, nonatomic) IBOutlet UIButton *button2;
@@ -22,6 +21,7 @@
 @property (weak, nonatomic) IBOutlet UIButton *button6;
 
 - (IBAction)buttonPressed:(id)sender;
+- (IBAction)startGamePressed:(id)sender;
 
 @end
 
