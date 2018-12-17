@@ -21,14 +21,21 @@ typedef enum{
 @interface ViewController () {
     NSArray *colors;
     NSMutableArray *buttons;
-    NSMutableArray *gamePattern;
-    int level;
+    NSMutableArray *computerPattern;
+    int gameLevel;
+    int gamePointer;
+    BOOL userInputCorrect;
+    BOOL gameWon;
 }
-- (void)setBackgroundColorForButton: (UIButton*)button withColor: (int)colorValue;
-- (void)startGame;
-- (void)createPattern;
-- (void)showPatternToUser: (NSTimer *)timer;
-- (void)playGame: (NSTimer *)timer;
+-(void)setBackgroundColorForButton: (UIButton*)button withColor: (int)colorValue;
+-(void)startLevel;
+-(void)createPattern;
+-(void)showPatternToUser: (NSTimer *)timer;
+-(void)userTurn: (NSTimer *)timer;
+-(void)nextLevel;
+-(void)gameOver;
+-(void)setGameSettings;
+-(void)toggleColoredButtonsForAbility: (BOOL)enabled;
 @end
 
 
@@ -50,6 +57,7 @@ typedef enum{
     
     for(int i = 0; i < [buttons count]; i++){
         ((UIButton *)[buttons objectAtIndex:i]).showsTouchWhenHighlighted = YES;
+        ((UIButton *)[buttons objectAtIndex:i]).enabled = NO;
         [self setBackgroundColorForButton:[buttons objectAtIndex:i] withColor: [colors[i] intValue]];
     }
 }
@@ -61,8 +69,9 @@ typedef enum{
 }
 
 
-- (void)startGame{
-    level = 1;
+- (void)startLevel{
+    gamePointer = 0;
+    gameWon = NO;
     [self createPattern];
     NSMutableDictionary *patternParameter = [[NSMutableDictionary alloc] init];
     patternParameter[@"position"] = @0;
@@ -71,42 +80,82 @@ typedef enum{
 
 
 - (void)createPattern{
-    int currentNumberOfPattern = level + 4;
-    gamePattern = [[NSMutableArray alloc] init];
+    int currentNumberOfPattern = gameLevel + 4;
+    computerPattern = [[NSMutableArray alloc] init];
     
     for(int i = 0; i < currentNumberOfPattern; i++){
         NSNumber *randomNumber = [NSNumber numberWithInt: arc4random_uniform(6)];
-        [gamePattern addObject: randomNumber];
+        [computerPattern addObject: randomNumber];
     }
 }
 
 
 -(void)showPatternToUser: (NSTimer *)timer{
-    if([[timer userInfo][@"position"] intValue] == [gamePattern count]){
+    if([[timer userInfo][@"position"] intValue] == [computerPattern count]){
         [timer invalidate];
         timer = nil;
-        [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(playGame:) userInfo:nil repeats:YES];
+        [self toggleColoredButtonsForAbility: YES];
+        [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(userTurn:) userInfo:nil repeats:YES];
         return;
     }
     int i = [([timer userInfo][@"position"]) intValue];
-    UIButton* choosenButton = [buttons objectAtIndex: [[gamePattern objectAtIndex:i] intValue]];
+    UIButton* choosenButton = [buttons objectAtIndex: [[computerPattern objectAtIndex:i] intValue]];
     [timer userInfo][@"position"] = @([[timer userInfo][@"position"] intValue] + 1);
     NSLog(@"%li", (long)choosenButton.tag);
 }
 
 
--(void)playGame: (NSTimer *)timer{
+-(void)userTurn: (NSTimer *)timer{
     int currentSecond = [self.gameTimer.text intValue];
-    if(currentSecond == 0){
+    if(!userInputCorrect || currentSecond == 0){
         [timer invalidate];
         timer = nil;
-        //game over
+        [self gameOver];
         return;
     }
     currentSecond -= 1;
     self.gameTimer.text = [NSString stringWithFormat:@"%d", currentSecond];
     
-    
+    if(gamePointer == [computerPattern count]){
+        [timer invalidate];
+        timer = nil;
+        [self nextLevel];
+    }
+}
+
+
+-(void)nextLevel {
+    NSLog(@"NextLevel");
+    [self toggleColoredButtonsForAbility: NO];
+    gameLevel += 1;
+    int currentSecond = [self.gameTimer.text intValue] + 10;
+    self.gameTimer.text = [NSString stringWithFormat:@"%d", currentSecond];
+    NSLog(@"Adding 10 more seconds");
+    [self startLevel];
+}
+
+
+-(void)gameOver {
+    self.gameTimer.text = [NSString stringWithFormat:@"%d", 0];
+    [self toggleColoredButtonsForAbility:NO];
+    [_startButton setTitle: @"Reset" forState:UIControlStateNormal];
+    _startButton.enabled = YES;
+    NSLog(@"GameOver");
+}
+
+
+-(void)setGameSettings {
+    gameLevel = 1;
+    userInputCorrect = YES;
+    _gameScore.text = [NSString stringWithFormat:@"%d", 0];
+    _gameTimer.text = [NSString stringWithFormat: @"%d", 10];
+}
+
+
+-(void)toggleColoredButtonsForAbility: (BOOL)display{
+    for(int i = 0; i < [buttons count]; i++){
+        ((UIButton *)[buttons objectAtIndex:i]).enabled = display;
+    }
 }
 
 
@@ -137,10 +186,34 @@ typedef enum{
 
 - (IBAction)buttonPressed:(id)sender {
     UIButton *currentButton=(UIButton*)sender;
-    NSLog(@"%li", (long)currentButton.tag);
+    if((int)currentButton.tag == [[computerPattern objectAtIndex:gamePointer] intValue]){
+        gamePointer += 1;
+        _gameScore.text = [NSString stringWithFormat:@"%d", ([_gameScore.text intValue] + 1)];
+    }
+    else {
+        NSLog(@"Wrong");
+        userInputCorrect = NO;
+    }
 }
 
+
 - (IBAction)startGamePressed:(id)sender {
-    [self startGame];
+    [self setGameSettings];
+    [self startLevel];
+    _startButton.enabled = NO;
+    [_startButton setTitle: @"" forState:UIControlStateNormal];
 }
 @end
+
+
+
+/*
+ On load - game sets color of the square
+ 
+ Press Game Start - starts game
+ 1)Creates pattern at random (computerPattern)
+ 2)Start timer that calls showPatternToUser at each second. Pass in patternParam {position: 0} (pointer for computerPattern)
+    - Up tic position for reach showPatternTouser method.
+ 3)Start timer and allow user to input the pattern.
+ 
+ */
