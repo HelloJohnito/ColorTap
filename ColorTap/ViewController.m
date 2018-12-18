@@ -100,6 +100,7 @@ typedef enum{
     }
     int i = [([timer userInfo][@"position"]) intValue];
     UIButton* choosenButton = [buttons objectAtIndex: [[computerPattern objectAtIndex:i] intValue]];
+    [choosenButton flashButton];
     [timer userInfo][@"position"] = @([[timer userInfo][@"position"] intValue] + 1);
     NSLog(@"%li", (long)choosenButton.tag);
 }
@@ -183,7 +184,6 @@ typedef enum{
 }
 
 
-
 - (IBAction)buttonPressed:(id)sender {
     UIButton *currentButton=(UIButton*)sender;
     if((int)currentButton.tag == [[computerPattern objectAtIndex:gamePointer] intValue]){
@@ -203,6 +203,7 @@ typedef enum{
     _startButton.enabled = NO;
     [_startButton setTitle: @"" forState:UIControlStateNormal];
 }
+
 @end
 
 
@@ -215,5 +216,8 @@ typedef enum{
  2)Start timer that calls showPatternToUser at each second. Pass in patternParam {position: 0} (pointer for computerPattern)
     - Up tic position for reach showPatternTouser method.
  3)Start timer and allow user to input the pattern.
+ 
+ 
+ NEED TO CHANGE LOGIC OF WHEN TO STOP TIMER WHEN LOSING
  
  */

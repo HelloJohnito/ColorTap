@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "UIButton+animation.h"
 
 @interface ViewController : UIViewController
 
